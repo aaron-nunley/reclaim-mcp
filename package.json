@@ -1,0 +1,45 @@
+{
+  "name": "reclaim-mcp",
+  "version": "0.1.0",
+  "description": "Unofficial MCP server for Reclaim.ai — manage tasks, habits, events, focus time, and analytics via any MCP-compatible client.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "reclaim-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "reclaim",
+    "reclaim-ai",
+    "calendar",
+    "task-management",
+    "ai",
+    "claude",
+    "copilot"
+  ],
+  "author": "Aaron Nunley",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaron-nunley/reclaim-mcp.git"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
