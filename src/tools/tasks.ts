@@ -17,6 +17,46 @@ import type { Task } from "../types/reclaim.js";
 import type { z, ZodObject, ZodRawShape } from "zod";
 
 // ---------------------------------------------------------------------------
+// Date normalization
+// ---------------------------------------------------------------------------
+
+/** Match bare YYYY-MM-DD (no time component). */
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Reclaim's task API requires full ISO 8601 datetimes. If the caller passes a
+ * bare date string (YYYY-MM-DD), expand it:
+ *   - `due`         → end of day (23:59:00) in local timezone
+ *   - `snoozeUntil` → start of day (00:00:00) in local timezone
+ *
+ * Already-complete datetimes pass through untouched.
+ */
+function normalizeDateFields(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
+  const out = { ...input };
+
+  // Build a UTC offset string like "-07:00" from the server's local timezone.
+  const tzOffset = (() => {
+    const off = new Date().getTimezoneOffset(); // minutes, negative = ahead of UTC
+    const sign = off <= 0 ? "+" : "-";
+    const abs = Math.abs(off);
+    const h = String(Math.floor(abs / 60)).padStart(2, "0");
+    const m = String(abs % 60).padStart(2, "0");
+    return `${sign}${h}:${m}`;
+  })();
+
+  if (typeof out.due === "string" && DATE_ONLY_RE.test(out.due)) {
+    out.due = `${out.due}T23:59:00${tzOffset}`;
+  }
+  if (typeof out.snoozeUntil === "string" && DATE_ONLY_RE.test(out.snoozeUntil)) {
+    out.snoozeUntil = `${out.snoozeUntil}T00:00:00${tzOffset}`;
+  }
+
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Response slimming
 // ---------------------------------------------------------------------------
 
@@ -104,7 +144,9 @@ export function taskTools(client: ReclaimClient): ToolDefinition<ZodObject<ZodRa
       inputSchema: CreateTaskInputSchema,
       outputSchema: TaskSchema,
       handler: async (input) => {
-        return client.createTask(input as z.infer<typeof CreateTaskInputSchema>);
+        return client.createTask(
+          normalizeDateFields(input) as z.infer<typeof CreateTaskInputSchema>,
+        );
       },
     },
 
@@ -115,7 +157,7 @@ export function taskTools(client: ReclaimClient): ToolDefinition<ZodObject<ZodRa
       inputSchema: UpdateTaskInputSchema,
       outputSchema: TaskSchema,
       handler: async ({ taskId, ...updates }) => {
-        return client.updateTask(taskId, updates);
+        return client.updateTask(taskId, normalizeDateFields(updates));
       },
     },
 
